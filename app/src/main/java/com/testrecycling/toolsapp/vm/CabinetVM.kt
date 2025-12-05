@@ -1,7 +1,9 @@
 package com.testrecycling.toolsapp.vm
 
 import android.graphics.Bitmap
+import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.lifecycle.ViewModel
+import com.google.common.util.concurrent.ListenableFuture
 import com.seetaface.v6.FaceImagePreprocessor
 import com.seetaface.v6.SeetaPointF
 import com.seetaface.v6.TrackingInfo
@@ -94,13 +96,15 @@ class CabinetVM @Inject constructor() : ViewModel() {
     private val flowBoxDetection = MutableStateFlow(false)
     val isBoxDetection: MutableStateFlow<Boolean> = flowBoxDetection
 
+    //相机提供者
+    var cameraProviderFuture: ListenableFuture<ProcessCameraProvider>? = null
 
     /*******************************************测试工装模块*************************************************/
 
     ///防止点击录入多次
     private val flowCaiQu = MutableStateFlow(false)
     val isCaiQu: MutableStateFlow<Boolean> = flowCaiQu
-    private val flowFaceTextMark = MutableSharedFlow<String>(replay = 1)
+    private val flowFaceTextMark = MutableSharedFlow<String>(replay = 0)
     val faceTextMark = flowFaceTextMark.asSharedFlow()
 
     //添加人脸检测中
@@ -110,6 +114,10 @@ class CabinetVM @Inject constructor() : ViewModel() {
     //标记是否弹框了
     private val flowShowDialog = MutableStateFlow(true)
     val showDialogCollect: MutableStateFlow<Boolean> = flowShowDialog
+
+    ///维护未识别到人脸识别次数
+    val flowNoFaceCount = MutableStateFlow(0)
+    val getNoFaceCount: MutableStateFlow<Int> = flowNoFaceCount
 
     //只有数据不同才会更新面部
     private val flowAddFace = MutableStateFlow<MutableList<FloatArray>>(mutableListOf())
@@ -150,7 +158,7 @@ class CabinetVM @Inject constructor() : ViewModel() {
         return false
     }
 
-    val testFaceQueue = Channel<Bitmap>()
+    val testFaceQueue = Channel<Bitmap>(Channel.CONFLATED)
 
     /***
      * 添加人脸识别队列
@@ -165,22 +173,95 @@ class CabinetVM @Inject constructor() : ViewModel() {
      * 执行人脸识别队列
      */
     fun testMatchFaceQueue() {
-        ioScope.launch {
+        defaultScope.launch {
             while (isActive) {
                 val bitmap = testFaceQueue.receive()
                 Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 开始匹配 | ${isBoxDetection.value} | ${Thread.currentThread().name}")
                 bitmap.let { faceBitmap ->
-                    testAntiStatusYes(faceBitmap)
+//                    antiStatusYes(faceBitmap)
+//                    antiStatusNo(faceBitmap)
+//                    testAntiStatusYes2(faceBitmap)
+                    testAntiStatusNo(faceBitmap)
 
                 }
             }
         }
     }
 
+    fun emitText(text: String) {
+        ioScope.launch {
+            flowFaceTextMark.emit(text)
+        }
+    }
+
     /***
      * 活体检测
      */
-    suspend fun testAntiStatusYes(faceBitmap: Bitmap) {
+    fun antiStatusYes(faceBitmap: Bitmap) {
+        val pointFs = arrayOfNulls<SeetaPointF>(5)
+        val seetaImageData = FaceImagePreprocessor.getInstance().getImageDataFromBitmap(faceBitmap)
+        val faces = FaceEngineHelper.faceDetector?.detect(seetaImageData)
+        faces?.let {
+            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 获取人脸信息组开始")
+            isBoxDetection.value = true
+            FaceEngineHelper.faceLandMarker?.mark(seetaImageData, faces[0]?.position, pointFs)
+            val fint: Int = FaceEngineHelper.faceRecognizer?.extractFeatureSize ?: 1
+            val feats = FloatArray(fint)
+            //特征提取
+            FaceEngineHelper.faceRecognizer?.extract(seetaImageData, pointFs, feats)
+            //活体检测
+            var maxIndex = 0
+            var maxWidth = 0.0
+            for (i in faces.indices) {
+                if (faces[i].position.width > maxWidth) {
+                    maxIndex = i
+                    maxWidth = faces[i].position.width.toDouble()
+                }
+            }
+            val trackingInfo = TrackingInfo().apply {
+                faceInfo = faces[maxIndex].position
+                faceInfo.x = faces[maxIndex].position.x
+                faceInfo.y = faces[maxIndex].position.y
+                faceInfo.width = faces[maxIndex].position.width
+                faceInfo.height = faces[maxIndex].position.height
+            }
+            val predictStatus = FaceEngineHelper.faceAntiSpoofing?.predict(
+                seetaImageData, trackingInfo.faceInfo, pointFs
+            )
+            val faceAntiStatus = EnumFaceAntiStatus.getFaceAntiStatus(predictStatus)
+            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 匹配活体")
+            faceAntiStatus?.let { anti ->
+                isBoxDetection.value = true
+                if (EnumFaceAntiStatus.STATUS_REAL != anti) {
+                    Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 假人....")
+                    MediaPlayerHelper.playAudio("jiance")//人脸识别失败
+                    emitText("人脸识别失败 ${getNoFaceCount.value}")
+                } else {
+                    val chenggong = testSearchFaceLocal(feats)
+                    if (chenggong) {
+                        flowNoFaceCount.value++
+                        Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 耗时 结束 识别成功")
+                        MediaPlayerHelper.playAudio("chenggong")//人脸识别成功
+                        emitText("人脸匹配成功 ${getNoFaceCount.value}")
+                    } else {
+                        Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 特征检测和提取 开启识别 失败了")
+                        MediaPlayerHelper.playAudio("jiance")//人脸识别失败
+                        emitText("请人脸对准识别区域内进行识别 ${getNoFaceCount.value}")
+                    }
+                }
+            }
+        } ?: run {
+            MediaPlayerHelper.playAudio("weijiance")//人脸识别失败
+            isBoxDetection.value = false
+            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 没有获取到人脸信息组 faces null ${getNoFaceCount.value}")
+        }
+        Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 获取人脸信息组结束")
+    }
+
+    /***
+     * 活体检测 裁剪
+     */
+    fun testAntiStatusYes2(faceBitmap: Bitmap) {
         val pointFs = arrayOfNulls<SeetaPointF>(5)
         val seetaImageData = FaceImagePreprocessor.getInstance().getImageDataFromBitmap(faceBitmap)
         val faces = FaceEngineHelper.faceDetector?.detect(seetaImageData)
@@ -199,7 +280,7 @@ class CabinetVM @Inject constructor() : ViewModel() {
                 if (EnumFaceAntiStatus.STATUS_REAL != anti) {
                     Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 假人....")
                     MediaPlayerHelper.playAudio("jiance")//人脸识别失败
-                    flowFaceTextMark.emit("人脸识别失败")
+                    emitText("人脸识别失败 ${getNoFaceCount.value}")
                 } else {
                     Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 开始匹配人脸")
                     val seetaImageData2 =
@@ -210,22 +291,96 @@ class CabinetVM @Inject constructor() : ViewModel() {
                     Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 开始匹配人脸")
                     val chenggong = testSearchFaceLocal(feats2)
                     if (chenggong) {
+                        flowNoFaceCount.value++
                         Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 耗时 结束 识别成功")
                         MediaPlayerHelper.playAudio("chenggong")//人脸识别成功
-                        flowFaceTextMark.emit("人脸匹配成功")
+                        emitText("人脸匹配成功 ${getNoFaceCount.value}")
                     } else {
                         Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 特征检测和提取 开启识别 失败了")
                         MediaPlayerHelper.playAudio("jiance")//人脸识别失败
-                        flowFaceTextMark.emit("请人脸对准识别区域内进行识别")
+                        emitText("请人脸对准识别区域内进行识别 ${getNoFaceCount.value}")
                     }
                 }
             }
         } ?: run {
             Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 没有获取到人脸信息组 faces null")
             MediaPlayerHelper.playAudio("weijiance")//人脸识别失败
-            flowFaceTextMark.emit("未检测到人脸信息...")
+            emitText("未检测到人脸信息...${getNoFaceCount.value}")
         }
         Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 获取人脸信息组结束")
+    }
+
+    /**
+     *不活体检测
+     */
+    fun antiStatusNo(faceBitmap: Bitmap) {
+        val pointFs = arrayOfNulls<SeetaPointF>(5)
+        val seetaImageData = FaceImagePreprocessor.getInstance().getImageDataFromBitmap(faceBitmap)
+        val faces = FaceEngineHelper.faceDetector?.detect(seetaImageData)
+        faces?.let {
+            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 获取人脸信息组开始")
+            val seetaImageData2 =
+                FaceEngineHelper.faceRecognizer?.cropFaceV2(seetaImageData, pointFs)
+            val fint2: Int = FaceEngineHelper.faceRecognizer?.extractFeatureSize ?: 1
+            val feats2 = FloatArray(fint2)
+            FaceEngineHelper.faceRecognizer?.extractCropFace(seetaImageData2, feats2)
+            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 开始匹配人脸")
+            val chenggong = testSearchFaceLocal(feats2)
+            if (chenggong) {
+                flowNoFaceCount.value++
+                Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 耗时 结束 识别成功")
+                MediaPlayerHelper.playAudio("chenggong")//人脸识别成功
+                emitText("人脸匹配成功 ${getNoFaceCount.value}")
+            } else {
+                Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 特征检测和提取 开启识别 失败了")
+                MediaPlayerHelper.playAudio("jiance")//人脸识别失败
+                emitText("请人脸对准识别区域内进行识别 ${getNoFaceCount.value}")
+            }
+
+        } ?: run {
+            MediaPlayerHelper.playAudio("weijiance")//人脸识别失败
+            isBoxDetection.value = false
+        }
+        Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 获取人脸信息组结束")
+
+    }
+
+    /**
+     *不活体检测 裁剪
+     */
+    fun testAntiStatusNo(faceBitmap: Bitmap) {
+        val pointFs = arrayOfNulls<SeetaPointF>(5)
+        val seetaImageData = FaceImagePreprocessor.getInstance().getImageDataFromBitmap(faceBitmap)
+        val faces = FaceEngineHelper.faceDetector?.detect(seetaImageData)
+        faces?.let {
+            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 获取人脸信息组开始")
+            isBoxDetection.value = true
+            FaceEngineHelper.faceLandMarker?.mark(seetaImageData, faces[0]?.position, pointFs)
+            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 匹配活体")
+            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 开始匹配人脸")
+            val seetaImageData2 =
+                FaceEngineHelper.faceRecognizer?.cropFaceV2(seetaImageData, pointFs)
+            val fint2: Int = FaceEngineHelper.faceRecognizer?.extractFeatureSize ?: 1
+            val feats2 = FloatArray(fint2)
+            FaceEngineHelper.faceRecognizer?.extractCropFace(seetaImageData2, feats2)
+            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 开始匹配人脸")
+            val chenggong = testSearchFaceLocal(feats2)
+            if (chenggong) {
+                flowNoFaceCount.value++
+                Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 耗时 结束 识别成功")
+                MediaPlayerHelper.playAudio("chenggong")//人脸识别成功
+                emitText("人脸匹配成功 ${getNoFaceCount.value}")
+            } else {
+                Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 特征检测和提取 开启识别 失败了")
+                MediaPlayerHelper.playAudio("jiance")//人脸识别失败
+                emitText("请人脸对准识别区域内进行识别 ${getNoFaceCount.value}")
+            }
+        } ?: run {
+            MediaPlayerHelper.playAudio("weijiance")//人脸识别失败
+            isBoxDetection.value = false
+        }
+        Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 获取人脸信息组结束")
+
     }
 
     /*******************************************测试工装模块*************************************************/

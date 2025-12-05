@@ -37,7 +37,7 @@ public class FaceEngine {
             if (faceDetector == null || faceLandMarker == null || faceRecognizer == null) {
                 faceDetector = new FaceDetector();
                 faceLandMarker = new FaceLandMarker(SeetafaceModelConst.MODEL_LAND_MARKER_PTS5);
-                faceRecognizer = new FaceRecognizer(SeetafaceModelConst.MODEL_RECOGNIZER);
+                faceRecognizer = new FaceRecognizer(SeetafaceModelConst.MODEL_RECOGNIZER_LIGHT);
                 faceAntiSpoofing = new FaceAntiSpoofing(FaceConfig.ANTI_TYPE);
             }
         } catch (Exception e) {

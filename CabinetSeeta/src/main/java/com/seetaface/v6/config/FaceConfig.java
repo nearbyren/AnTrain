@@ -33,13 +33,13 @@ public class FaceConfig {
     /**
      * 人脸相似度
      */
-    public static final float FACE_SIMILARITY_DEGREE = 0.8f;
+    public static final float FACE_SIMILARITY_DEGREE = 0.6f;
 
     /**
      * 检测器阈值默认值是0.9，合理范围为[0, 1]。这个值一般不进行调整，
      * 除了用来处理一些极端情况。这个值设置的越小，漏检的概率越小，同时误检的概率会提高；
      */
-    public static final float PROPERTY_THRESHOLD_VALUE = 0.9f;
+    public static final float PROPERTY_THRESHOLD_VALUE = 0.55f;
     /**
      * 最小人脸是人脸检测器常用的一个概念，默认值为20，单位像素。它表示了在一个输入图片上可以检测到的最小人脸尺度，
      * 注意这个尺度并非严格的像素值，例如设置最小人脸80，检测到了宽度为75的人脸是正常的，这个值是给出检测能力的下限。
@@ -48,7 +48,7 @@ public class FaceConfig {
      * SeetaFace采用的是BindingBox Regresion的方式训练的检测器。如果最小人脸参数设置为80的话，
      * 从检测能力上，可以将原图缩小的原来的1/4，这样从计算复杂度上，能够比最小人脸设置为20时，提速到16倍。
      */
-    public static final int PROPERTY_MIN_FACE_SIZE_VALUE = 100;
+    public static final int PROPERTY_MIN_FACE_SIZE_VALUE = 150;
 
 
     public static final int CAMERA_PREVIEW_WIDTH = 1080;

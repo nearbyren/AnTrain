@@ -163,7 +163,16 @@ import java.util.concurrent.Executors
                             hideFaceSchematic = true
                             binding.faceScan.setShouldDrawOverlay(FaceScanView.CheckPreview.NONE)
                         }
-                        processFrame(proxy)
+                        cabinetVM.defaultScope.launch {
+                            try {
+                                processFrame(proxy)
+                            } catch (e: Exception) {
+                                Loge.d("网络导入用户信息 FaceEngineHelper 处理图像帧异常 ${e.message} ")
+                                e.printStackTrace()
+                            } finally {
+                                proxy.close()
+                            }
+                        }
                     }
                 }
         // 步骤2：快速绑定摄像头
@@ -320,11 +329,10 @@ import java.util.concurrent.Executors
             val size = cabinetVM.flowFaceCollect.value.size
             binding.tvFaceCount.text = "已录入人脸数(${size})"
         }
-        imageProxy.close()
     }
 
     private fun faceRecognition(faceBitmap: Bitmap) {
-        Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 faceRecognition ${cabinetVM.isCaiQu.value} | ${cabinetVM.flowFaceCollect.value.isEmpty()}")
+//        Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 faceRecognition ${cabinetVM.isCaiQu.value} | ${cabinetVM.flowFaceCollect.value.isEmpty()}")
         if (cabinetVM.isCaiQu.value) {
             val pointFs = arrayOfNulls<SeetaPointF>(5)
             val seetaImageData =

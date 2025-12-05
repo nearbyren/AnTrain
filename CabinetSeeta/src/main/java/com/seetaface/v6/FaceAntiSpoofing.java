@@ -38,7 +38,7 @@ public class FaceAntiSpoofing {
         }
         int result = nativeCreateEngine(firstModel, secondModel);
         Log.d(TAG, "face--- createEngine result:" + result);
-        nativeSetProperty(SeetafaceConst.PROPERTY_NUMBER_THREADS, 1);
+        nativeSetProperty(SeetafaceConst.PROPERTY_NUMBER_THREADS, 4);
     }
 
     public void destroy() {
