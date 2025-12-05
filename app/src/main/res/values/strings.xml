@@ -1,0 +1,8 @@
+<resources>
+    <string name="mobile_exit"><u>退出</u></string>
+    <string name="kg_1">2kg校准</string>
+    <string name="kg_2">25kg校准</string>
+    <string name="kg_3">100kg校准</string>
+    <string name="kg_4">板框校准</string>
+    <string name="title_date_dialogs">选择流量卡到期时间</string>
+</resources>

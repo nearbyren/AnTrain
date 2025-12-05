@@ -1,0 +1,15 @@
+package com.seetaface.v6;
+
+import org.opencv.core.Mat;
+import org.opencv.core.Rect;
+
+
+public class TrackingInfo {
+
+    public Mat matBgr;
+
+    public SeetaRect faceInfo = new SeetaRect();
+
+    public Rect faceRect = new Rect();
+
+}
