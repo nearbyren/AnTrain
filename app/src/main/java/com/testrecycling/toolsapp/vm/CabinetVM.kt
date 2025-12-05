@@ -198,17 +198,20 @@ class CabinetVM @Inject constructor() : ViewModel() {
      * 活体检测
      */
     fun antiStatusYes(faceBitmap: Bitmap) {
+        Loge.d("网络导入用户信息 获取人脸信息组开始")
         val pointFs = arrayOfNulls<SeetaPointF>(5)
         val seetaImageData = FaceImagePreprocessor.getInstance().getImageDataFromBitmap(faceBitmap)
         val faces = FaceEngineHelper.faceDetector?.detect(seetaImageData)
         faces?.let {
-            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 获取人脸信息组开始")
+            Loge.d("网络导入用户信息 提取人脸信息数组了")
             isBoxDetection.value = true
             FaceEngineHelper.faceLandMarker?.mark(seetaImageData, faces[0]?.position, pointFs)
+            Loge.d("网络导入用户信息 获取的人脸特征点数组")
             val fint: Int = FaceEngineHelper.faceRecognizer?.extractFeatureSize ?: 1
             val feats = FloatArray(fint)
             //特征提取
             FaceEngineHelper.faceRecognizer?.extract(seetaImageData, pointFs, feats)
+            Loge.d("网络导入用户信息 返回的人脸特征值数组")
             //活体检测
             var maxIndex = 0
             var maxWidth = 0.0
@@ -228,23 +231,24 @@ class CabinetVM @Inject constructor() : ViewModel() {
             val predictStatus = FaceEngineHelper.faceAntiSpoofing?.predict(
                 seetaImageData, trackingInfo.faceInfo, pointFs
             )
+            Loge.d("网络导入用户信息 获取活体检测了")
             val faceAntiStatus = EnumFaceAntiStatus.getFaceAntiStatus(predictStatus)
-            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 匹配活体")
+            Loge.d("网络导入用户信息 匹配活体结束了")
             faceAntiStatus?.let { anti ->
                 isBoxDetection.value = true
                 if (EnumFaceAntiStatus.STATUS_REAL != anti) {
-                    Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 假人....")
+                    Loge.d("网络导入用户信息 假人....")
                     MediaPlayerHelper.playAudio("jiance")//人脸识别失败
                     emitText("人脸识别失败 ${getNoFaceCount.value}")
                 } else {
                     val chenggong = testSearchFaceLocal(feats)
                     if (chenggong) {
                         flowNoFaceCount.value++
-                        Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 耗时 结束 识别成功")
+                        Loge.d("网络导入用户信息 识别成功")
                         MediaPlayerHelper.playAudio("chenggong")//人脸识别成功
                         emitText("人脸匹配成功 ${getNoFaceCount.value}")
                     } else {
-                        Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 特征检测和提取 开启识别 失败了")
+                        Loge.d("网络导入用户信息 失败了")
                         MediaPlayerHelper.playAudio("jiance")//人脸识别失败
                         emitText("请人脸对准识别区域内进行识别 ${getNoFaceCount.value}")
                     }
@@ -253,27 +257,28 @@ class CabinetVM @Inject constructor() : ViewModel() {
         } ?: run {
             MediaPlayerHelper.playAudio("weijiance")//人脸识别失败
             isBoxDetection.value = false
-            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 没有获取到人脸信息组 faces null ${getNoFaceCount.value}")
+            Loge.d("网络导入用户信息 没有获取到人脸信息组 faces null")
         }
-        Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 获取人脸信息组结束")
+        Loge.d("网络导入用户信息 获取人脸信息组结束")
     }
 
     /***
      * 活体检测 裁剪
      */
     fun testAntiStatusYes2(faceBitmap: Bitmap) {
+        Loge.d("网络导入用户信息 获取人脸信息组开始")
         val pointFs = arrayOfNulls<SeetaPointF>(5)
         val seetaImageData = FaceImagePreprocessor.getInstance().getImageDataFromBitmap(faceBitmap)
         val faces = FaceEngineHelper.faceDetector?.detect(seetaImageData)
         faces?.let {
-            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 获取人脸信息组开始")
+            Loge.d("网络导入用户信息 提取人脸信息数组了")
             isBoxDetection.value = true
             FaceEngineHelper.faceLandMarker?.mark(seetaImageData, faces[0]?.position, pointFs)
+            Loge.d("网络导入用户信息 获取的人脸特征点数组")
             val predictStatus = FaceEngineHelper.faceAntiSpoofing?.predict(
                 seetaImageData, faces[0].position, pointFs
             )
             val faceAntiStatus = EnumFaceAntiStatus.getFaceAntiStatus(predictStatus)
-
             Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 匹配活体")
             faceAntiStatus?.let { anti ->
                 isBoxDetection.value = true
