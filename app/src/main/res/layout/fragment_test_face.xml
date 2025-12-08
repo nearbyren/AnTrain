@@ -20,7 +20,7 @@
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/ll_start_pause"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/dp_100"
+                android:layout_height="@dimen/dp_20"
                 android:background="@drawable/shape_input_test_bg"
                 app:layout_constraintLeft_toLeftOf="parent">
 
@@ -40,7 +40,7 @@
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/ll_capture"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/dp_100"
+                android:layout_height="@dimen/dp_40"
                 android:background="@color/lightskyblue"
                 app:layout_constraintTop_toBottomOf="@+id/ll_start_pause">
 
@@ -138,8 +138,7 @@
                 <androidx.camera.view.PreviewView
                     android:id="@+id/previewView"
                     android:layout_width="match_parent"
-                    android:layout_height="960dp"
-                    android:layout_marginTop="@dimen/dp_200"
+                    android:layout_height="@dimen/dp_640"
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintRight_toRightOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -153,6 +152,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@android:color/transparent"
+                    android:visibility="gone"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent" />
@@ -183,7 +183,7 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/cl_select_content"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="0dp"
             android:background="@drawable/ic_diolaig_bg"
             android:clickable="true"
             android:focusable="true"
@@ -192,15 +192,14 @@
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            tools:visibility="gone">
+            tools:visibility="visible">
 
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/cl_select"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="@dimen/dp_32"
-                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintBottom_toTopOf="@+id/cl_bottom_btn"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toRightOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
@@ -213,7 +212,7 @@
 
                     <androidx.appcompat.widget.AppCompatImageView
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="@dimen/dp_60"
                         android:scaleType="fitXY"
                         android:src="@drawable/ic_diolaig_top"
                         app:layout_constraintLeft_toLeftOf="parent"
@@ -223,11 +222,10 @@
                         android:id="@+id/tv_select_title"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:layout_marginLeft="@dimen/dp_195"
-                        android:layout_marginTop="@dimen/dp_20"
                         android:text="保存此人脸图进行人脸检测？"
                         android:textColor="@color/white"
                         android:textSize="@dimen/sp_7"
+                        app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintTop_toTopOf="parent">
 
                     </androidx.appcompat.widget.AppCompatTextView>
@@ -235,14 +233,14 @@
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="@dimen/dp_0"
                     android:background="@drawable/ic_diolaig_content"
                     app:layout_constraintTop_toBottomOf="@+id/top">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:id="@+id/cl_title"
                         android:layout_width="match_parent"
-                        android:layout_height="@dimen/dp_60">
+                        android:layout_height="wrap_content">
 
                         <androidx.appcompat.widget.AppCompatTextView
                             android:id="@+id/title_text"
@@ -273,22 +271,19 @@
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
+                        android:layout_height="@dimen/dp_0"
                         android:padding="@dimen/dp_10"
                         app:layout_constraintTop_toBottomOf="@+id/cl_title">
 
                         <androidx.appcompat.widget.AppCompatImageView
                             android:id="@+id/preview"
-                            android:layout_width="@dimen/dp_320"
-                            android:layout_height="@dimen/dp_320"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
                             android:layout_gravity="center"
-                            android:layout_marginTop="@dimen/dp_20"
-                            android:layout_marginBottom="@dimen/dp_20"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintLeft_toLeftOf="parent"
                             app:layout_constraintRight_toRightOf="parent"
-                            app:layout_constraintTop_toTopOf="parent"
-                           />
+                            app:layout_constraintTop_toTopOf="parent" />
 
 
                     </androidx.constraintlayout.widget.ConstraintLayout>
@@ -304,15 +299,15 @@
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/cl_bottom_btn"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/dp_20"
+                android:layout_height="@dimen/dp_0"
                 android:visibility="visible"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/cl_select">
 
                 <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/tv_confirm"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/dp_60"
                     android:background="@drawable/ic_config"
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintRight_toLeftOf="@+id/tv_cancel" />
@@ -320,8 +315,8 @@
 
                 <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/tv_cancel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/dp_60"
                     android:background="@drawable/ic_cancel"
                     app:layout_constraintLeft_toRightOf="@+id/tv_confirm"
                     app:layout_constraintRight_toRightOf="parent" />

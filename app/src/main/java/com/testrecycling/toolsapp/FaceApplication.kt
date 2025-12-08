@@ -78,7 +78,7 @@ dp: 55.555573
         instance = this
         initLog()
         AppUtils.init(this)
-        initEnjoySDK()
+//        initEnjoySDK()
         createDir()
         initSerialPort()
         initNetWork()

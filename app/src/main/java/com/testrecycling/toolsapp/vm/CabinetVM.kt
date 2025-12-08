@@ -176,12 +176,11 @@ class CabinetVM @Inject constructor() : ViewModel() {
         defaultScope.launch {
             while (isActive) {
                 val bitmap = testFaceQueue.receive()
-                Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 开始匹配 | ${isBoxDetection.value} | ${Thread.currentThread().name}")
                 bitmap.let { faceBitmap ->
-//                    antiStatusYes(faceBitmap)
+                    antiStatusYes(faceBitmap)
 //                    antiStatusNo(faceBitmap)
 //                    testAntiStatusYes2(faceBitmap)
-                    testAntiStatusNo(faceBitmap)
+//                    testAntiStatusNo(faceBitmap)
 
                 }
             }
@@ -238,24 +237,24 @@ class CabinetVM @Inject constructor() : ViewModel() {
                 isBoxDetection.value = true
                 if (EnumFaceAntiStatus.STATUS_REAL != anti) {
                     Loge.d("网络导入用户信息 假人....")
-                    MediaPlayerHelper.playAudio("jiance")//人脸识别失败
+                    MediaPlayerHelper.playAudioAsset(AppUtils.getContext(),"jiance.mp3")//人脸识别失败
                     emitText("人脸识别失败 ${getNoFaceCount.value}")
                 } else {
                     val chenggong = testSearchFaceLocal(feats)
                     if (chenggong) {
                         flowNoFaceCount.value++
                         Loge.d("网络导入用户信息 识别成功")
-                        MediaPlayerHelper.playAudio("chenggong")//人脸识别成功
+                        MediaPlayerHelper.playAudioAsset(AppUtils.getContext(),"chenggong.mp3")//人脸识别成功
                         emitText("人脸匹配成功 ${getNoFaceCount.value}")
                     } else {
                         Loge.d("网络导入用户信息 失败了")
-                        MediaPlayerHelper.playAudio("jiance")//人脸识别失败
+                        MediaPlayerHelper.playAudioAsset(AppUtils.getContext(),"jiance.mp3")//人脸识别失败
                         emitText("请人脸对准识别区域内进行识别 ${getNoFaceCount.value}")
                     }
                 }
             }
         } ?: run {
-            MediaPlayerHelper.playAudio("weijiance")//人脸识别失败
+            MediaPlayerHelper.playAudioAsset(AppUtils.getContext(),"weijiance.mp3")//人脸识别失败
             isBoxDetection.value = false
             Loge.d("网络导入用户信息 没有获取到人脸信息组 faces null")
         }
@@ -278,38 +277,41 @@ class CabinetVM @Inject constructor() : ViewModel() {
             val predictStatus = FaceEngineHelper.faceAntiSpoofing?.predict(
                 seetaImageData, faces[0].position, pointFs
             )
+            Loge.d("网络导入用户信息 获取活体检测了")
             val faceAntiStatus = EnumFaceAntiStatus.getFaceAntiStatus(predictStatus)
-            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 匹配活体")
+            Loge.d("网络导入用户信息 匹配活体结束了")
             faceAntiStatus?.let { anti ->
                 isBoxDetection.value = true
                 if (EnumFaceAntiStatus.STATUS_REAL != anti) {
-                    Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 假人....")
-                    MediaPlayerHelper.playAudio("jiance")//人脸识别失败
+                    Loge.d("网络导入用户信息 假人....")
+                    MediaPlayerHelper.playAudioAsset(AppUtils.getContext(),"jiance.mp3")//人脸识别失败
                     emitText("人脸识别失败 ${getNoFaceCount.value}")
                 } else {
-                    Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 开始匹配人脸")
+                    Loge.d("网络导入用户信息 获取裁剪人脸")
                     val seetaImageData2 =
                         FaceEngineHelper.faceRecognizer?.cropFaceV2(seetaImageData, pointFs)
+                    Loge.d("网络导入用户信息 返回裁剪人脸")
                     val fint2: Int = FaceEngineHelper.faceRecognizer?.extractFeatureSize ?: 1
                     val feats2 = FloatArray(fint2)
+                    Loge.d("网络导入用户信息 获取的人脸特征值数组")
                     FaceEngineHelper.faceRecognizer?.extractCropFace(seetaImageData2, feats2)
-                    Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 开始匹配人脸")
+                    Loge.d("网络导入用户信息 返回的人脸特征值数组")
                     val chenggong = testSearchFaceLocal(feats2)
                     if (chenggong) {
                         flowNoFaceCount.value++
-                        Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 耗时 结束 识别成功")
-                        MediaPlayerHelper.playAudio("chenggong")//人脸识别成功
+                        Loge.d("网络导入用户信息 识别成功")
+                        MediaPlayerHelper.playAudioAsset(AppUtils.getContext(),"chenggong.mp3")//人脸识别成功
                         emitText("人脸匹配成功 ${getNoFaceCount.value}")
                     } else {
-                        Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 特征检测和提取 开启识别 失败了")
-                        MediaPlayerHelper.playAudio("jiance")//人脸识别失败
+                        Loge.d("网络导入用户信息 失败了")
+                        MediaPlayerHelper.playAudioAsset(AppUtils.getContext(),"jiance.mp3")//人脸识别失败
                         emitText("请人脸对准识别区域内进行识别 ${getNoFaceCount.value}")
                     }
                 }
             }
         } ?: run {
-            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 没有获取到人脸信息组 faces null")
-            MediaPlayerHelper.playAudio("weijiance")//人脸识别失败
+            Loge.d("网络导入用户信息 没有获取到人脸信息组 faces null")
+            MediaPlayerHelper.playAudioAsset(AppUtils.getContext(),"weijiance.mp3")//人脸识别失败
             emitText("未检测到人脸信息...${getNoFaceCount.value}")
         }
         Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 获取人脸信息组结束")
@@ -319,31 +321,34 @@ class CabinetVM @Inject constructor() : ViewModel() {
      *不活体检测
      */
     fun antiStatusNo(faceBitmap: Bitmap) {
+        Loge.d("网络导入用户信息 获取人脸信息组开始")
         val pointFs = arrayOfNulls<SeetaPointF>(5)
         val seetaImageData = FaceImagePreprocessor.getInstance().getImageDataFromBitmap(faceBitmap)
         val faces = FaceEngineHelper.faceDetector?.detect(seetaImageData)
         faces?.let {
-            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 获取人脸信息组开始")
-            val seetaImageData2 =
-                FaceEngineHelper.faceRecognizer?.cropFaceV2(seetaImageData, pointFs)
-            val fint2: Int = FaceEngineHelper.faceRecognizer?.extractFeatureSize ?: 1
-            val feats2 = FloatArray(fint2)
-            FaceEngineHelper.faceRecognizer?.extractCropFace(seetaImageData2, feats2)
-            Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 开始匹配人脸")
-            val chenggong = testSearchFaceLocal(feats2)
+            Loge.d("网络导入用户信息 提取人脸信息数组了")
+            isBoxDetection.value = true
+            FaceEngineHelper.faceLandMarker?.mark(seetaImageData, faces[0]?.position, pointFs)
+            Loge.d("网络导入用户信息 获取的人脸特征点数组")
+            val fint: Int = FaceEngineHelper.faceRecognizer?.extractFeatureSize ?: 1
+            val feats = FloatArray(fint)
+            //特征提取
+            FaceEngineHelper.faceRecognizer?.extract(seetaImageData, pointFs, feats)
+            Loge.d("网络导入用户信息 返回的人脸特征值数组")
+            val chenggong = testSearchFaceLocal(feats)
             if (chenggong) {
                 flowNoFaceCount.value++
-                Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 耗时 结束 识别成功")
-                MediaPlayerHelper.playAudio("chenggong")//人脸识别成功
+                Loge.d("网络导入用户信息 识别成功")
+                MediaPlayerHelper.playAudioAsset(AppUtils.getContext(),"chenggong.mp3")//人脸识别成功
                 emitText("人脸匹配成功 ${getNoFaceCount.value}")
             } else {
-                Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 特征检测和提取 开启识别 失败了")
-                MediaPlayerHelper.playAudio("jiance")//人脸识别失败
+                Loge.d("网络导入用户信息 失败了")
+                MediaPlayerHelper.playAudioAsset(AppUtils.getContext(),"jiance.mp3")//人脸识别失败
                 emitText("请人脸对准识别区域内进行识别 ${getNoFaceCount.value}")
             }
 
         } ?: run {
-            MediaPlayerHelper.playAudio("weijiance")//人脸识别失败
+            MediaPlayerHelper.playAudioAsset(AppUtils.getContext(),"weijiance.mp3")//人脸识别失败
             isBoxDetection.value = false
         }
         Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 获取人脸信息组结束")
@@ -373,15 +378,15 @@ class CabinetVM @Inject constructor() : ViewModel() {
             if (chenggong) {
                 flowNoFaceCount.value++
                 Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 耗时 结束 识别成功")
-                MediaPlayerHelper.playAudio("chenggong")//人脸识别成功
+                MediaPlayerHelper.playAudioAsset(AppUtils.getContext(),"chenggong.mp3")//人脸识别成功
                 emitText("人脸匹配成功 ${getNoFaceCount.value}")
             } else {
                 Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 图片匹配 特征检测和提取 开启识别 失败了")
-                MediaPlayerHelper.playAudio("jiance")//人脸识别失败
+                MediaPlayerHelper.playAudioAsset(AppUtils.getContext(),"jiance.mp3")//人脸识别失败
                 emitText("请人脸对准识别区域内进行识别 ${getNoFaceCount.value}")
             }
         } ?: run {
-            MediaPlayerHelper.playAudio("weijiance")//人脸识别失败
+            MediaPlayerHelper.playAudioAsset(AppUtils.getContext(),"weijiance.mp3")//人脸识别失败
             isBoxDetection.value = false
         }
         Loge.d("网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 获取人脸信息组结束")

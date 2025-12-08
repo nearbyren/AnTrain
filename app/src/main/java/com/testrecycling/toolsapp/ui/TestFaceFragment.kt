@@ -59,18 +59,17 @@ import java.util.concurrent.Executors
 /***
  *检测人脸
  */
- class TestFaceFragment : BaseBindFragment<FragmentTestFaceBinding>() {
+class TestFaceFragment : BaseBindFragment<FragmentTestFaceBinding>() {
     private val cabinetVM: CabinetVM by viewModels(ownerProducer = { requireActivity() })
     private lateinit var previewView: PreviewView
     private var cameraProvider: ProcessCameraProvider? = null
     private var camerax141: Camera? = null
     private var imageAnalysis: ImageAnalysis? = null
     private var cameraSelector: CameraSelector? = null
-    private var frameCallback: FrameDataCallback? = null
     private lateinit var cameraExecutor: ExecutorService
 
     //0.前置 1.后置 2.外接
-    private var LENS_FACING_TYPE = 2
+    private var LENS_FACING_TYPE = 0
     private lateinit var permissionsManager: PermissionsRequester
     private var isGoPer = false
 
@@ -83,6 +82,7 @@ import java.util.concurrent.Executors
 
 
     }
+
     override fun isShowActionBar(): Boolean {
         return true
     }
@@ -93,6 +93,7 @@ import java.util.concurrent.Executors
 
     override fun doneCountdown() {
     }
+
     override fun layoutRes(): Int {
         return R.layout.fragment_test_face
     }
@@ -109,6 +110,7 @@ import java.util.concurrent.Executors
             }
         }
     }
+
     // 自定义数据回调接口
     interface FrameDataCallback {
         fun onFrameReceived(bitmap: Bitmap)
@@ -145,18 +147,23 @@ import java.util.concurrent.Executors
 
     private fun startLowLatencyPreview() {
         // 步骤1：立即启动低分辨率预览
-        val resolutionSelector =
-                ResolutionSelector.Builder().setResolutionStrategy(ResolutionStrategy(Size(
-                    FaceConfig.CAMERA_PREVIEW_WIDTH, FaceConfig.CAMERA_PREVIEW_HEIGHT), // 目标分辨率
-                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER)).build()
+        val resolutionSelector = ResolutionSelector.Builder().setResolutionStrategy(
+            ResolutionStrategy(
+                Size(
+                    FaceConfig.CAMERA_PREVIEW_WIDTH, FaceConfig.CAMERA_PREVIEW_HEIGHT
+                ), // 目标分辨率
+                ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+            )
+        ).build()
 
         val preview =
-                Preview.Builder().setResolutionSelector(resolutionSelector) // 替代 setTargetResolution
-                    .build().also {
-                        it.surfaceProvider = previewView.surfaceProvider
-                    }
+            Preview.Builder().setResolutionSelector(resolutionSelector) // 替代 setTargetResolution
+                .build().also {
+                    it.surfaceProvider = previewView.surfaceProvider
+                }
         imageAnalysis =
-                ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888).build().also {
+            ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888).build().also {
                     it.setAnalyzer(cameraExecutor) { proxy ->
                         if (!hideFaceSchematic) {
                             Log.e("TestFace", "网络导入用户信息 FaceEngineHelper 人脸跟踪处理程序 setAnalyzer ")
@@ -206,7 +213,8 @@ import java.util.concurrent.Executors
      *  2 外接摄像头头
      *  -1 未知摄像头
      */
-    @OptIn(ExperimentalLensFacing::class) @SuppressLint("RestrictedApi")
+    @OptIn(ExperimentalLensFacing::class)
+    @SuppressLint("RestrictedApi")
     private fun findExternalCamera(selector: Int = CameraSelector.LENS_FACING_EXTERNAL): CameraSelector? {
         return cameraProvider?.availableCameraInfos?.firstOrNull { info ->
 
@@ -251,9 +259,11 @@ import java.util.concurrent.Executors
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         when (requestCode) {
             REQUEST_CAMERA -> {
-                val hasCameraPermission = PermissionChecker.checkSelfPermission(AppUtils.getContext(), CAMERA)
+                val hasCameraPermission =
+                    PermissionChecker.checkSelfPermission(AppUtils.getContext(), CAMERA)
                 if (hasCameraPermission == PermissionChecker.PERMISSION_DENIED) {
-                    Toast.makeText(AppUtils.getContext(), "您已拒绝权限访问。转到设置页面以打开权限", Toast.LENGTH_LONG).show()
+                    Toast.makeText(AppUtils.getContext(), "您已拒绝权限访问。转到设置页面以打开权限", Toast.LENGTH_LONG)
+                        .show()
                     return
                 }
                 if (isGoPer) {
@@ -304,7 +314,8 @@ import java.util.concurrent.Executors
     }
 
     fun dealNeverAskAgain() {
-        Toast.makeText(AppUtils.getContext(), "有些许可被拒绝了，再也没有问过。", Toast.LENGTH_LONG).show()
+        Toast.makeText(AppUtils.getContext(), "有些许可被拒绝了，再也没有问过。", Toast.LENGTH_LONG)
+            .show()
 //        val intent: Intent =
 //                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
 //        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -312,7 +323,8 @@ import java.util.concurrent.Executors
     }
 
     private fun initPermissions() {
-        permissionsManager = mActivity?.let { PermissionsRequester(CAMERA, activity = it, onShowRationale = ::dealShowRationale, onPermissionDenied = ::dealPermissionDenied, onNeverAskAgain = ::dealNeverAskAgain, requiresPermission = ::dealRequiresPermission) }!!
+        permissionsManager =
+            mActivity?.let { PermissionsRequester(CAMERA, activity = it, onShowRationale = ::dealShowRationale, onPermissionDenied = ::dealPermissionDenied, onNeverAskAgain = ::dealNeverAskAgain, requiresPermission = ::dealRequiresPermission) }!!
         permissionsManager.launch()
     }
 
@@ -323,11 +335,33 @@ import java.util.concurrent.Executors
         if (!cabinetVM.isTestAddDetection.value) {
             //默认方式
             val bitmap = imageProxy.toBitmap()
-            faceRecognition(bitmap)
-        }
-        cabinetVM.mainScope.launch {
-            val size = cabinetVM.flowFaceCollect.value.size
-            binding.tvFaceCount.text = "已录入人脸数(${size})"
+            val matrix = Matrix().apply {
+                postRotate(-90f)  //LENS_FACING_FRONT
+                postScale(-1f, 1f) // 如果需要镜像翻转（前置摄像头）
+            }
+//            0 -> {//前置
+//                -90f
+//            }
+//
+//            1 -> {//后摄像头模块
+//                90f
+//            }
+//
+//            2 -> {//外接
+//                -0f
+//            }
+//
+//            else -> {
+//                0f
+//            }
+            val faceBitmap =
+                Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            faceRecognition(faceBitmap)
+            cabinetVM.mainScope.launch {
+                binding.ivBitmap.setImageBitmap(faceBitmap)
+                val size = cabinetVM.flowFaceCollect.value.size
+                binding.tvFaceCount.text = "已录入人脸数(${size})"
+            }
         }
     }
 
@@ -336,7 +370,7 @@ import java.util.concurrent.Executors
         if (cabinetVM.isCaiQu.value) {
             val pointFs = arrayOfNulls<SeetaPointF>(5)
             val seetaImageData =
-                    FaceImagePreprocessor.getInstance().getImageDataFromBitmap(faceBitmap)
+                FaceImagePreprocessor.getInstance().getImageDataFromBitmap(faceBitmap)
             val faces = FaceEngineHelper.faceDetector?.detect(seetaImageData)
             faces?.let {
                 cabinetVM.isTestAddDetection.value = true
@@ -350,7 +384,7 @@ import java.util.concurrent.Executors
                 cabinetVM.mainScope.launch {
                     showConfirmDialog(faceBitmap, feats)
                 }
-            }?: run {
+            } ?: run {
                 cabinetVM.isTestAddDetection.value = false
                 cabinetVM.mainScope.launch {
                     binding.tvTips.text = "未检测到人脸信息..."
@@ -359,7 +393,7 @@ import java.util.concurrent.Executors
             }
             return
         }
-         if (cabinetVM.flowFaceCollect.value.isEmpty()) {
+        if (cabinetVM.flowFaceCollect.value.isEmpty()) {
             cabinetVM.isBoxDetection.value = false
             cabinetVM.mainScope.launch {
                 binding.tvTips.text = "人脸识别库为空"
@@ -397,116 +431,6 @@ import java.util.concurrent.Executors
         cabinetVM.testFaceQueue.cancel()
         super.onDestroy()
     }
-    // ================= 扩展函数：Image转Bitmap =================
-//    private fun ImageProxy.toBitmap(): Bitmap {
-//        val buffer = planes[0].buffer
-//        val bytes = ByteArray(buffer.remaining())
-//        buffer.get(bytes)
-//        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-//    }
-
-    // 将 ImageProxy 转换为 Bitmap 并自动旋转的扩展函数
-    fun ImageProxy.toBitmap2(rotationDegrees: Int = 90): Bitmap {
-        // 1. 获取 YUV 数据平面
-        val planes = planes
-        val yBuffer = planes[0].buffer
-        val uBuffer = planes[1].buffer
-        val vBuffer = planes[2].buffer
-
-        // 2. 创建 YUV 到 RGB 的转换器
-        val ySize = yBuffer.remaining()
-        val uSize = uBuffer.remaining()
-        val vSize = vBuffer.remaining()
-        val nv21 = ByteArray(ySize + uSize + vSize)
-
-        // 3. 将 YUV 数据转换为 NV21 格式
-        yBuffer.get(nv21, 0, ySize)
-        vBuffer.get(nv21, ySize, vSize)
-        uBuffer.get(nv21, ySize + vSize, uSize)
-
-        // 4. 使用 YuvImage 创建 Bitmap
-        val yuvImage = YuvImage(nv21, ImageFormat.NV21, width, height, null)
-        val outputStream = ByteArrayOutputStream()
-        yuvImage.compressToJpeg(Rect(0, 0, width, height), 100, outputStream)
-        val imageBytes = outputStream.toByteArray()
-        val originalBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-
-        // 5. 执行旋转操作
-        val matrix = Matrix().apply {
-            postRotate(rotationDegrees.toFloat())
-            postScale(-1f, 1f) // 如果需要镜像翻转（前置摄像头）
-        }
-
-        return Bitmap.createBitmap(originalBitmap, 0, 0, originalBitmap.width, originalBitmap.height, matrix, true)
-    }
-
-    // ================= 数据回调设置 =================
-    fun setFrameDataCallback(callback: FrameDataCallback) {
-     }
-
-    // 圆形裁剪设置
-    private fun setupCircularMask() {
-        // 设置圆角裁剪（仅 TextureView 支持）
-        if (previewView.implementationMode == PreviewView.ImplementationMode.PERFORMANCE) {
-            previewView.post {
-                previewView.outlineProvider = object : ViewOutlineProvider() {
-                    override fun getOutline(view: View, outline: Outline) {
-//                        outline.setOval(0, 0, view.width, view.height)
-//                        outline.setRoundRect(0, 0, view.width, view.height, view.height / 2f)
-                        val size = view.width.coerceAtMost(view.height) // 取宽高中的较小值
-                        val left = (view.width - size) / 2
-                        val top = (view.height - size) / 2
-
-                        // 方法1：直接绘制圆形（API 21+）
-                        outline.setOval(left, top, left + size, top + size)
-                    }
-                }
-                previewView.clipToOutline = true
-                Log.e("TestFace", "网络导入用户信息 outlineProvider")
-            }
-        }
-    }
-
-    // ================= 核心相机逻辑 =================
-    private fun setupUsbCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(AppUtils.getContext())
-        cameraProviderFuture.addListener({
-            Log.e("TestFace", "网络导入用户信息 setupUsbCamera cameraProviderFuture addListener")
-            cameraProvider = cameraProviderFuture.get()
-            checkUsbCameraAvailability()
-        }, ContextCompat.getMainExecutor(AppUtils.getContext()))
-    }
-
-    /** 检测外接USB摄像头 */
-    private fun checkUsbCameraAvailability() {
-        val usbManager = mActivity?.getSystemService(USB_SERVICE) as UsbManager
-        if (usbManager.deviceList.values.isEmpty()) {
-            return
-        }
-        startLowLatencyPreview()
-    }
-
-    private fun upgradePreviewQuality() {
-        // 升级到高清预览并启动分析
-
-        val resolutionSelector =
-                ResolutionSelector.Builder().setResolutionStrategy(ResolutionStrategy(Size(FaceConfig.CAMERA_PREVIEW_WIDTH, FaceConfig.CAMERA_PREVIEW_HEIGHT), // 目标分辨率
-                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER)).build()
-
-        val preview =
-                Preview.Builder().setResolutionSelector(resolutionSelector) // 替代 setTargetResolution
-                    .build().also {
-                        it.surfaceProvider = previewView.surfaceProvider
-                    }
-        imageAnalysis =
-                ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888).build().also {
-                    it.setAnalyzer(cameraExecutor) { proxy ->
-                        processFrame(proxy)
-                    }
-                }
-
-        cameraSelector?.let {
-            cameraProvider?.bindToLifecycle(this, it, preview, imageAnalysis)
-        }
-    }
 }
+
+
